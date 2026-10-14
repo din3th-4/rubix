@@ -42,30 +42,30 @@ window_name = "Rubik's Cube Scanner"
 
 #cube configuration 
 
-face_order = ['F', 'R', 'B', 'L', 'U', 'D']  # order of faces to scan
+face_order = ['B', 'R', 'F', 'L', 'U', 'D']  # order of faces to scan
 total_faces = len(face_order)
 
 face_instructions = {
-    'F' : (
-        'Show the FRONT face. Keep the top face pointing up.'
+    'B' : (
+        'Show the BACK face (the face facing the computer). Keep the top face pointing up.'
     ),
     'R': (
         'Turn the cube one quarter-turn to you right.'
         ' Keep the top face up.'
     ),
-    'B': (
-        'Turn right again. Show the original BACK face.'
+    'F': (
+        'Turn right again. Show the original FRONT face (this was the face pointing to you when you started).'
     ),
     'L': (
-        'Turn right again. Show the original LEFT face.'
+        'Turn right again. Show the original LEFT face. '
     ),
     'U': (
         'Turn right once more to restore the starting position'
-        ' front, then tilt the TOP toward the camera.'
+        ' then tilt the TOP face toward the camera.'
     ),
     'D': (
         'Restore the starting orientation, then tilt the'
-        ' BOTTOM toward the camera.'
+        ' BOTTOM toward the camera and return to starting postion. '
     ),
 }
 
@@ -74,7 +74,7 @@ cap_faces = {face: None for face in face_order}  # dictionary to store captured 
 
 
 
-def initalize_camera():
+def initialize_camera():
     camera = cv2.VideoCapture(camera_index)
 
     if not camera.isOpened():
@@ -82,8 +82,8 @@ def initalize_camera():
         print ('Error: Could not open webcam.')
         return None 
 
-    camera.set(cv2.CAP_PROP_FRAME_WIDTH, frame_width)
-    camera.set(cv2.CAP_PROP_FRAME_HEIGHT, frame_height)
+    camera.set(cv2.CAP_PROP_FRAME_WIDTH, d_frame_width)
+    camera.set(cv2.CAP_PROP_FRAME_HEIGHT, d_frame_height)
 
     return camera
 
@@ -299,13 +299,13 @@ def display_colors(frame, samples):
         cell_x = x + col * cell_width
         cell_y = y + row * cell_height
 
-        inset_x = cell_width // 4
-        inset_y = cell_height // 4
+        insert_x = cell_width // 4
+        insert_y = cell_height // 4
 
         # Get the corresponding region from the BGR frame.
         region = frame[
-            cell_y + inset_y:cell_y + cell_height - inset_y,
-            cell_x + inset_x:cell_x + cell_width - inset_x,
+            cell_y + insert_y:cell_y + cell_height - insert_y,
+            cell_x + insert_x:cell_x + cell_width - insert_x,
         ]
 
         if region.size == 0:
@@ -411,7 +411,7 @@ def scan_cube():
         face: None for face in face_order 
     }
 
-    camera = initalize_camera()
+    camera = initialize_camera()
 
     if camera is None:
         return None
@@ -436,7 +436,7 @@ def scan_cube():
             samples = sample_colors(lab_frame)
 
             #draw interface on mirrored preview.
-            frame = delraw_grid(frame)
+            frame = draw_grid(frame)
             frame = display_colors(frame, samples)
 
             progress = (
@@ -444,7 +444,7 @@ def scan_cube():
                 ' | SPACE: capture | r: retake | q: quit'
             )
 
-            frame = draw_intructions(
+            frame = draw_instructions(
                 frame,
                 message,
                 progress,
