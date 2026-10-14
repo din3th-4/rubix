@@ -416,12 +416,12 @@ def scan_cube():
     if camera is None:
         return None
 
-    cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
 
     face_index = 0
     message = get_next_face(face_index)
 
     try:
+        cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
 
         while True:
 
