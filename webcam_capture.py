@@ -673,6 +673,8 @@ def scan_cube():
         release_camera(camera)
 
 
+#unit for testing this file and getting the face data printed on the terminal
+
 if __name__ == '__main__':
     faces = scan_cube()
 
