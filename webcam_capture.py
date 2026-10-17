@@ -51,6 +51,7 @@ total_faces = len(face_order)
 
 face_instructions = {
     'B' : (
+        'Make sure to AVOID reflections on the cube as much as possible '
         'Show the BACK face (the face facing the computer). Keep the top face pointing up.'
     ),
     'R': (
@@ -673,6 +674,7 @@ def scan_cube():
         release_camera(camera)
 
 
+'''
 #unit for testing this file and getting the face data printed on the terminal
 
 if __name__ == '__main__':
@@ -718,6 +720,6 @@ if __name__ == '__main__':
         except ValueError as error:
             print(f'Classification skipped: {error}')
 
-
+'''
 
 

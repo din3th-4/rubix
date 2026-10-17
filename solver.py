@@ -66,13 +66,16 @@ def orient_faces(faces):
     Reorient the six captured face grids into kociemba's required 
     face orientations.
 
+    (webcam captures are mirrored)
+
+    capture order: B, R, F, L, U, D
     kociemba's facelet ordering: U, R, F, D, L, B
 
 
-    The webcam preview is mirrored horizontally 
-    side faces and U are corrected horizontally 
-    D is corrected vertically because it is viewed from below 
-    while being tilted towards the cam
+    B, R, F, L: mirrored webcam preview should be corrected
+    U: rows should be reversed cuz top face is titled toward 
+    the cam from the back side 
+    D: sampled orientation is kept unchanged 
 
     '''
 
@@ -81,6 +84,7 @@ def orient_faces(faces):
     oriented = {}
 
     for face in k_face_order:
+
         #convert the 9 stickers into a 3x3 grid 
         grid = [
             list(faces[face][0:3]),
@@ -92,9 +96,11 @@ def orient_faces(faces):
             #correcting the mirrored webcam preview 
             grid = [row[::-1] for row in grid]
 
-        elif face == 'D':
+        elif face == 'U':
             #reverse the row order for the bottom face
             grid = grid[::-1]
+
+        #D remains unchanged 
 
 
         #convert the corrected grid back to the 9 stickers 
@@ -182,15 +188,53 @@ def solve_cube(facelet_string):
         solution = kociemba.solve(facelet_string)
 
     except Exception as error:
-        raise ValueError(
-            'Koceimba could not solve this cube state '
-            'Check the captured colors, face orientations, '
-            'and sticker classification'
-        ) from error 
+        print("Actual Kociemba error:", repr(error))
+        raise
 
     return solution
 
 
 
+if __name__ == "__main__":
+    from webcam_capture import scan_cube, classify_face_colors
 
+    print("Starting Rubik's Cube scan...")
+
+    raw_faces = scan_cube()
+
+    if raw_faces is None:
+        print("Scan cancelled or camera unavailable.")
+
+    else:
+        try:
+            print("\nClassifying stickers...")
+            classified_faces, uncertain, references = (
+                classify_face_colors(raw_faces)
+            )
+            print("\nClassified faces:")
+            for face in ['B', 'R', 'F', 'L', 'U', 'D']:
+                print(f"{face}: {classified_faces[face]}")
+
+            if uncertain:
+                print(f"\nWarning: {len(uncertain)} uncertain stickers.")
+                for sticker in uncertain:
+                    print(sticker)
+
+            print("\nConverting faces to Kociemba format...")
+            facelet_string = convert_to_facelet_string(
+                classified_faces
+            )
+
+            print("\nFacelet string:")
+            print(facelet_string)
+            print(f"Length: {len(facelet_string)}")
+
+            print("\nSolving cube...")
+            solution = solve_cube(facelet_string)
+
+            print("\nSolution:")
+            print(solution)
+
+        except (ValueError, TypeError) as error:
+            print(f"\nError: {error}")
 
