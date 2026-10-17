@@ -10,8 +10,6 @@ import numpy as np
 
 import kociemba
 
-from webcam_capture import scan_cube, classify_face_colors
-
 from collections import Counter 
 
 #kociembas required face order 
@@ -96,7 +94,7 @@ def orient_faces(faces):
 
         elif face == 'D':
             #reverse the row order for the bottom face
-            grid == grid[::-1]
+            grid = grid[::-1]
 
 
         #convert the corrected grid back to the 9 stickers 
@@ -110,20 +108,87 @@ def orient_faces(faces):
 
 
 
-
-
-    
-
 def convert_to_facelet_string(faces):
-    pass
+    """
+    Convert classified and oriented face data into the
+    54-character facelet string expected by Kociemba.
+    """
+
+    oriented_faces = orient_faces(faces)
+
+    facelet_string = ''.join(
+        ''.join(oriented_faces[face])
+        for face in k_face_order
+    )
+    validate_facelet_string(facelet_string)
+
+    return facelet_string
 
 
 def validate_facelet_string(facelet_string):
-    pass
+    '''
+    Valdate the format of the kociemba string 
+    '''
+
+    if not isinstance(facelet_string, str):
+        raise TypeError(
+            f'Facelet string must contain 54 characters, '
+            f'but contains {len(facelet_string)}'
+        )
+
+
+    invalid_labels = set(facelet_string) - valid_face_labels
+
+    if invalid_labels:
+        raise ValueError(
+            f'Invalid face lables found: {invalid_labels}'
+        )
+
+    counts = Counter(facelet_string)
+
+    for face in k_face_order:
+        if counts[face] != 9:
+            raise ValueError(
+                f"Expected 9 stickers labelled {face}, "
+                f"but found {counts[face]}."
+            )
+
+    #each face's centre sticker must match its face label 
+    for face_index, face in enumerate(k_face_order):
+        centre_index = face_index * 9 + 4 
+
+        if facelet_string[centre_index] != face:
+            raise ValueError(
+                f'Centre sticker for face {face} is incorrect'
+            )
+
+
+    return True 
+
+    
 
 
 def solve_cube(facelet_string):
-    pass 
+    '''
+    Solving the cube using kociemba 
+
+    returns the solution as a string of moves 
+
+    '''
+
+    validate_facelet_string(facelet_string)
+
+    try: 
+        solution = kociemba.solve(facelet_string)
+
+    except Exception as error:
+        raise ValueError(
+            'Koceimba could not solve this cube state '
+            'Check the captured colors, face orientations, '
+            'and sticker classification'
+        ) from error 
+
+    return solution
 
 
 
