@@ -100,7 +100,9 @@ def orient_faces(faces):
             #reverse the row order for the bottom face
             grid = grid[::-1]
 
-        #D remains unchanged 
+        elif face == 'D':
+            # Reverse rows for the bottom face
+            grid = grid[::-1]
 
 
         #convert the corrected grid back to the 9 stickers 
@@ -233,7 +235,6 @@ if __name__ == "__main__":
                 print(f"\n{face}:")
                 for i in range(0, 9, 3):
                     print(oriented[face][i:i+3])
-
 
 
             print("\nFacelet string:")
