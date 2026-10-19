@@ -400,36 +400,39 @@ def normalize_lab(lab_values):
 
 def classify_face_colors(faces, max_distance=None, min_margin=8.0):
     """
-    Classify stickers using the six center stickers as color references.
+    Classify each sticker independently using the six center stickers
+    as LAB color references.
 
-    Keeps all six center stickers fixed and assigns the remaining stickers
-    using minimum-cost assignment, enforcing exactly nine stickers per color.
+    Unlike the previous version, this function does not force exactly
+    nine stickers to be assigned to each color.
 
-    Uncertain results include the nearest-center label and the final
-    capacity-constrained label.
+    Returns:
+        classified: face grids containing the nearest-center labels
+        uncertain: stickers with ambiguous or distant color matches
+        references: normalized LAB center-color references
     """
-
 
     # Validate that all six faces were captured.
     if any(faces.get(face) is None for face in face_order):
         raise ValueError(
-            'All six faces must be captured before classification.'
+            "All six faces must be captured before classification."
         )
 
+    # Validate measurements.
     for face in face_order:
         measurements = np.asarray(faces[face])
 
         if measurements.shape != (9, 3):
             raise ValueError(
-                f'Face {face} must contain exactly 9 LAB measurements.'
+                f"Face {face} must contain exactly 9 LAB measurements."
             )
 
         if not np.all(np.isfinite(measurements)):
             raise ValueError(
-                f'Face {face} contains invalid LAB measurements.'
+                f"Face {face} contains invalid LAB measurements."
             )
 
-    # Use each center sticker as the reference for its color.
+    # Each center sticker is the reference for its face's color.
     references = {
         face: normalize_lab(faces[face][4])
         for face in face_order
@@ -445,14 +448,15 @@ def classify_face_colors(faces, max_distance=None, min_margin=8.0):
         for face in face_order
     }
 
-    stickers = []
+    uncertain = []
 
-    # Keep center stickers fixed; collect the other 48 stickers.
+    # Classify every sticker independently.
     for face in face_order:
         measurements = normalize_lab(faces[face])
 
         for sticker_index, measurement in enumerate(measurements):
 
+            # Keep center stickers fixed to their face labels.
             if sticker_index == 4:
                 classified[face][sticker_index] = face
                 continue
@@ -466,78 +470,47 @@ def classify_face_colors(faces, max_distance=None, min_margin=8.0):
             best_index = int(order[0])
             second_index = int(order[1])
 
-            stickers.append({
-                'face': face,
-                'index': sticker_index,
-                'distances': distances,
-                'nearest': reference_labels[best_index],
-                'best_distance': float(distances[best_index]),
-                'second_distance': float(distances[second_index]),
-                'margin': float(
-                    distances[second_index] - distances[best_index]
-                ),
-            })
+            best_label = reference_labels[best_index]
+            best_distance = float(distances[best_index])
+            second_distance = float(distances[second_index])
+            margin = second_distance - best_distance
 
-    # Each color must receive exactly 8 non-center stickers.
-    # Repeat each color 8 times to create 48 assignment slots.
-    color_slots = [
-        color
-        for color in reference_labels
-        for _ in range(8)
-    ]
+            # Assign the closest center color without enforcing counts.
+            classified[face][sticker_index] = best_label
 
-    # Cost matrix: one row per sticker, one column per color slot.
-    cost_matrix = np.zeros(
-        (len(stickers), len(color_slots)),
-        dtype=float
+            is_uncertain = (
+                (max_distance is not None
+                 and best_distance > max_distance)
+                or margin < min_margin
+            )
+
+            if is_uncertain:
+                uncertain.append({
+                    "face": face,
+                    "sticker": sticker_index + 1,
+                    "best_match": best_label,
+                    "distance": round(best_distance, 1),
+                    "margin": round(margin, 1),
+                })
+
+    # Report the actual counts without correcting them artificially.
+    counts = Counter(
+        label
+        for face in face_order
+        for label in classified[face]
     )
 
-    for sticker_index, sticker in enumerate(stickers):
-        for slot_index, color in enumerate(color_slots):
-            color_index = reference_labels.index(color)
-            cost_matrix[sticker_index, slot_index] = (
-                sticker['distances'][color_index]
-            )
+    print("\nSticker counts from independent classification:")
+    for label in reference_labels:
+        print(f"{label}: {counts[label]}")
 
-    # Find the globally minimum-cost assignment.
-    row_indices, column_indices = linear_sum_assignment(cost_matrix)
+    print("\nUncertain stickers:")
+    print(uncertain)
 
-    for row, column in zip(row_indices, column_indices):
-        sticker = stickers[row]
-        assigned_color = color_slots[column]
-
-        classified[sticker['face']][sticker['index']] = assigned_color
-
-    # Report low-confidence stickers and labels changed by the assignment.
-    uncertain = []
-
-    for sticker in stickers:
-        face = sticker['face']
-        index = sticker['index']
-        original_label = sticker['nearest']
-        assigned_label = classified[face][index]
-
-        is_uncertain = (
-            (
-                max_distance is not None
-                and sticker['best_distance'] > max_distance
-            )
-            or sticker['margin'] < min_margin
-            or original_label != assigned_label
-        )
-
-        if is_uncertain:
-            uncertain.append({
-                'face': face,
-                'sticker': index + 1,
-                'best_match': original_label,
-                'assigned_match': assigned_label,
-                'distance': round(sticker['best_distance'], 1),
-                'margin': round(sticker['margin'], 1),
-            })
+    print("\nCenter color references:")
+    print(references)
 
     return classified, uncertain, references
-
 
 def capture_face(samples, face_label):
     #store an independent copy of lab measurements 

@@ -92,7 +92,7 @@ def orient_faces(faces):
             list(faces[face][6:9])
         ]
 
-        if face in ('B', 'R', 'F', 'L', 'U'):
+        if face in ('B', 'R', 'F', 'L'):
             #correcting the mirrored webcam preview 
             grid = [row[::-1] for row in grid]
 
@@ -224,6 +224,17 @@ if __name__ == "__main__":
             facelet_string = convert_to_facelet_string(
                 classified_faces
             )
+
+            #temp debug: inspect the oriented face grids
+            oriented = orient_faces(classified_faces)
+
+            print("\nOriented face grids:")
+            for face in k_face_order:
+                print(f"\n{face}:")
+                for i in range(0, 9, 3):
+                    print(oriented[face][i:i+3])
+
+
 
             print("\nFacelet string:")
             print(facelet_string)
