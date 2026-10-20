@@ -197,6 +197,9 @@ def solve_cube(facelet_string):
 
 
 
+
+#code block for testing 
+
 if __name__ == "__main__":
     from webcam_capture import scan_cube, classify_face_colors
 
