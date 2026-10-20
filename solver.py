@@ -196,7 +196,7 @@ def solve_cube(facelet_string):
     return solution
 
 
-
+'''
 
 #code block for testing 
 
@@ -253,3 +253,4 @@ if __name__ == "__main__":
         except (ValueError, TypeError) as error:
             print(f"\nError: {error}")
 
+'''
